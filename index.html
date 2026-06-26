@@ -189,7 +189,7 @@
     const CHALAKIM_PER_DAY = 24 * CHALAKIM_PER_HOUR;
     const CHALAKIM_PER_MONTH = 29 * CHALAKIM_PER_DAY + 12 * CHALAKIM_PER_HOUR + 793;
     const INITIAL_MOLAD_OFFSET = 2 * CHALAKIM_PER_DAY + 5 * CHALAKIM_PER_HOUR + 204;
-    const HEBREW_EPOCH_RD = -1373427;
+    const HEBREW_EPOCH_RD = -1373429;
 
     function rdToJDN(rd) { return rd + 1721425; }
     function jdnToRD(jdn) { return jdn - 1721425; }
@@ -201,7 +201,7 @@
     }
     function rdOfTishrei1(year) {
         const molad = moladTishrei(year);
-        const weekday = (molad.day + 1) % 7;
+        const weekday = (molad.day + 6) % 7;
         let delay = 0;
         const dehiyyot = [];
         if (molad.parts >= 19440) {
