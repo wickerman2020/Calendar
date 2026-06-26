@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Еврейский календарь — Молад и дехийот</title>
+    <style>
+        :root {
+            --bg: #f5f0e6;
+            --card-bg: #fcfaf6;
+            --text: #1a1510;
+            --text-muted: #7a6f5d;
+            --accent: #1a3a6b;
+            --accent2: #c9a84c;
+            --border: #d4c8b5;
+            --btn-bg: #e8e2d6;
+            --btn-hover: #d4c8b5;
+            --input-bg: white;
+            --header-bg: #1a3a6b;
+            --header-text: #fcfaf6;
+            --today-bg: #fffde0;
+            --julian-color: #6b4c3b;
+            --shabbat-bg: #e8f0fe;
+            --rosh-hashana: #f5e6cc;
+            --yom-kippur: #e8e0f0;
+            --sukkot: #d4edda;
+            --hanukkah: #cce5ff;
+            --purim: #fde6f0;
+            --pesach: #fff3cd;
+            --shavuot: #e2f0e6;
+            --tisha-bav: #e6e0d8;
+            --molad-bg: #fef9ed;
+            --molad-border: #c9a84c;
+            --dehiyya-bg: #fff8e8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', 'DejaVu Serif', Georgia, 'Noto Serif Hebrew', serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 10px;
+        }
+        .container { max-width: 1300px; width: 100%; }
+        header {
+            background: var(--header-bg); color: var(--header-text);
+            padding: 15px 25px; border-radius: 12px; margin-bottom: 15px;
+            text-align: center; border-bottom: 3px solid var(--accent2);
+        }
+        header h1 { font-size: clamp(1.3rem, 2.8vw, 1.9rem); font-weight: 400; margin-bottom: 4px; }
+        .header-subtitle { font-size: 0.85rem; opacity: 0.85; }
+        .tabs { display: flex; gap: 4px; margin-bottom: 15px; }
+        .tabs button {
+            flex: 1; font-weight: bold; background: var(--btn-bg);
+            border-radius: 8px 8px 0 0; border: 1px solid var(--border); border-bottom: none;
+            padding: 8px 14px; cursor: pointer; color: var(--text);
+        }
+        .tabs button.active { background: var(--card-bg); border-bottom: 2px solid var(--accent); }
+        .panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 0 0 12px 12px; padding: 20px; display: none; }
+        .panel.active { display: block; }
+        .year-nav { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .year-nav .info { text-align: center; flex: 1; min-width: 200px; }
+        button {
+            padding: 8px 14px; border: 1px solid var(--border); border-radius: 6px;
+            background: var(--btn-bg); color: var(--text); cursor: pointer; transition: 0.2s;
+        }
+        button:hover { background: var(--btn-hover); }
+        .molad-box {
+            background: var(--molad-bg); border: 2px solid var(--molad-border);
+            border-radius: 10px; padding: 12px 18px; margin: 0 auto 14px;
+            max-width: 700px; text-align: center; font-size: 0.9rem; line-height: 1.6;
+        }
+        .molad-box .molad-title { font-weight: 700; color: #8b6914; margin-bottom: 4px; }
+        .molad-box .molad-value { font-weight: 600; font-size: 1rem; }
+        .molad-box .dehiyyot-list { margin-top: 6px; font-size: 0.8rem; color: #5c3d1e; }
+        .molad-box .dh-item {
+            display: inline-block; background: var(--dehiyya-bg); border: 1px solid #d4b96a;
+            border-radius: 5px; padding: 3px 8px; margin: 2px 4px; white-space: nowrap;
+        }
+        .calendar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+        .month-card {
+            border: 1px solid var(--border); border-radius: 10px; padding: 8px;
+            background: var(--card-bg); box-shadow: 0 2px 6px rgba(0,0,0,0.04); border-top: 5px solid var(--accent);
+        }
+        .month-card.tishrei { border-top-color: #c9a84c; background: #fefdf8; }
+        .month-card.adar-i, .month-card.adar-ii { border-top-color: #c0392b; background: #fef9f5; }
+        .month-header { text-align: center; margin-bottom: 4px; }
+        .month-hebrew { font-size: 1.5rem; font-weight: 700; color: var(--accent); direction: rtl; font-family: 'Noto Serif Hebrew', 'Times New Roman', serif; }
+        .month-card.tishrei .month-hebrew { color: #b8941f; }
+        .month-card.adar-i .month-hebrew, .month-card.adar-ii .month-hebrew { color: #c0392b; }
+        .month-translit { font-weight: bold; font-size: 1rem; }
+        .month-translation { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
+        .month-days-count { font-size: 0.65rem; color: var(--text-muted); }
+        .weekday-row { display: grid; grid-template-columns: repeat(7,1fr); text-align: center; font-size: 0.6rem; font-weight: 700; color: var(--text-muted); margin: 6px 0 3px; }
+        .days-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+        .day-cell {
+            min-height: 58px; display: flex; flex-direction: column; align-items: center;
+            justify-content: flex-start; border-radius: 5px; font-size: 0.75rem;
+            border: 1px solid transparent; padding: 2px 1px; background: transparent;
+        }
+        .day-cell.today { background: var(--today-bg) !important; border: 2px solid var(--accent); }
+        .day-cell.shabbat { background: var(--shabbat-bg); }
+        .day-cell.rosh-hashana { background: var(--rosh-hashana); }
+        .day-cell.yom-kippur { background: var(--yom-kippur); }
+        .day-cell.sukkot { background: var(--sukkot); }
+        .day-cell.hanukkah { background: var(--hanukkah); }
+        .day-cell.purim { background: var(--purim); }
+        .day-cell.pesach { background: var(--pesach); }
+        .day-cell.shavuot { background: var(--shavuot); }
+        .day-cell.tisha-bav { background: var(--tisha-bav); }
+        .badi-day-row { font-weight: bold; font-size: 0.9rem; }
+        .greg-date, .julian-date { font-size: 0.55rem; white-space: nowrap; }
+        .julian-date { color: var(--julian-color); }
+        .holy-label { font-size: 0.45rem; font-weight: 700; padding: 1px 2px; border-radius: 2px; background: #e8dcc8; color: #5c3d1e; }
+        .legend { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.75rem; color: var(--text-muted); justify-content: center; }
+        .legend .swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); display: inline-block; }
+        .converter-grid { display: flex; flex-wrap: wrap; gap: 20px; }
+        .converter-box { flex: 1; min-width: 280px; border: 1px solid var(--border); border-radius: 10px; padding: 18px; background: var(--card-bg); }
+        .converter-box h3 { text-align: center; color: var(--accent); margin-bottom: 12px; }
+        .input-group { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+        .input-group input, .input-group select { padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); }
+        .result-box { margin-top: 12px; padding: 14px; border-radius: 8px; background: #f0ece4; text-align: center; }
+        .result-box .main { font-weight: bold; font-size: 1.25rem; color: var(--accent); }
+        .result-box .sub { font-size: 0.85rem; color: var(--text-muted); }
+        footer { text-align: center; margin-top: 20px; font-size: 0.8rem; color: var(--text-muted); border-top: 1px solid var(--border); padding: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>🕎 Еврейский календарь (Анно Мунди)</h1>
+        <div class="header-subtitle">📅 Григорианский + Юлианский · Молад Тишрей и дехийот</div>
+    </header>
+    <div class="tabs">
+        <button id="tabCalendar" class="active">📅 Календарь</button>
+        <button id="tabConverter">🔄 Конвертер дат</button>
+    </div>
+
+    <div id="panelCalendar" class="panel active">
+        <div class="year-nav">
+            <button id="prevYearBtn">◀ Предыдущий год</button>
+            <div class="info">
+                <div id="yearDisplay" style="font-weight:bold;font-size:1.2rem;"></div>
+                <div id="currentDateInfo" style="font-size:0.9rem;color:var(--text-muted)"></div>
+                <div id="noticeYearType" style="font-size:0.75rem;color:#1a3a6b;font-style:italic;"></div>
+            </div>
+            <button id="nextYearBtn">Следующий год ▶</button>
+            <button id="todayBtn">📌 Сегодня</button>
+        </div>
+
+        <div class="molad-box" id="moladBox"></div>
+
+        <div id="calendarContainer"></div>
+        <div class="legend">
+            <span><span class="swatch" style="background:var(--today-bg)"></span> Сегодня</span>
+            <span><span class="swatch" style="background:var(--shabbat-bg)"></span> Шаббат</span>
+            <span><span class="swatch" style="background:var(--rosh-hashana)"></span> Рош ха‑Шана</span>
+            <span><span class="swatch" style="background:var(--yom-kippur)"></span> Йом Кипур</span>
+            <span><span class="swatch" style="background:var(--sukkot)"></span> Суккот</span>
+            <span><span class="swatch" style="background:var(--hanukkah)"></span> Ханука</span>
+            <span><span class="swatch" style="background:var(--pesach)"></span> Песах</span>
+            <span style="color:var(--julian-color)">📅 Юлианская дата</span>
+        </div>
+    </div>
+
+    <div id="panelConverter" class="panel">
+        <div class="converter-grid">
+            <div class="converter-box">
+                <h3>Григорианская → Еврейская + Юлианская</h3>
+                <div class="input-group"><input type="date" id="gregInput"><button id="convGregBtn">Конвертировать</button></div>
+                <div class="result-box" id="gregResult"><span class="sub">Выберите дату</span></div>
+            </div>
+            <div class="converter-box">
+                <h3>Еврейская → Григорианская + Юлианская</h3>
+                <div class="input-group">
+                    <select id="hebrewMonth"></select>
+                    <input type="number" id="hebrewDay" placeholder="День" min="1" max="30" style="width:70px;">
+                    <input type="number" id="hebrewYearInput" placeholder="Год" style="width:90px;">
+                    <button id="convHebrewBtn">Конвертировать</button>
+                </div>
+                <div class="result-box" id="hebrewResult"><span class="sub">Введите дату</span></div>
+            </div>
+        </div>
+    </div>
+    <footer>Еврейский календарь · Эра от сотворения мира · Юлианский и Григорианский стили</footer>
+</div>
+
+<script>
+(function() {
+    const CHALAKIM_PER_HOUR = 1080;
+    const CHALAKIM_PER_DAY = 24 * CHALAKIM_PER_HOUR;
+    const CHALAKIM_PER_MONTH = 29 * CHALAKIM_PER_DAY + 12 * CHALAKIM_PER_HOUR + 793;
+    const INITIAL_MOLAD_OFFSET = 11 * CHALAKIM_PER_HOUR + 204;
+    const HEBREW_EPOCH_RD = -1373427;
+
+    function rdToJDN(rd) { return rd + 1721425; }
+    function jdnToRD(jdn) { return jdn - 1721425; }
+    function isHebrewLeapYear(year) { return (7 * year + 1) % 19 < 7; }
+    function moladTishrei(year) {
+        const monthsElapsed = Math.floor((235 * year - 234) / 19);
+        const totalChalakim = INITIAL_MOLAD_OFFSET + CHALAKIM_PER_MONTH * monthsElapsed;
+        return {
+            day: Math.floor(totalChalakim / CHALAKIM_PER_DAY),
+            parts: totalChalakim % CHALAKIM_PER_DAY
+        };
+    }
+    function rdWeekday(rd) { return (rdToJDN(rd) + 1) % 7; }
+    function rdOfTishrei1(year) {
+        const molad = moladTishrei(year);
+        const moladWeekday = rdWeekday(HEBREW_EPOCH_RD + molad.day);
+        let roshDay = molad.day;
+        const dehiyyot = [];
+        if (molad.parts >= 19440) {
+            roshDay++;
+            dehiyyot.push({ name: 'Молад Закен', desc: 'Молад после 18:00 — перенос на +1 день.' });
+        } else if (molad.day % 7 === 2 && molad.parts >= 9924 && !isHebrewLeapYear(year)) {
+            roshDay += 2;
+            dehiyyot.push({ name: 'Га-Тарад', desc: 'Молад во вторник ≥ 9ч 204х в невисокосный год — перенос на +2 дня.' });
+        } else if (molad.day % 7 === 1 && molad.parts >= 16789 && isHebrewLeapYear(year - 1)) {
+            roshDay++;
+            dehiyyot.push({ name: 'Бетуткафот', desc: 'Молад в понедельник ≥ 15ч 589х после високосного года — перенос на +1 день.' });
+        }
+        if (roshDay % 7 === 2 || roshDay % 7 === 4 || roshDay % 7 === 6) {
+            dehiyyot.push({ name: 'Ло АДУ Рош', desc: 'Рош‑ха‑Шана не может быть в вс, ср или пт — перенос на +1 день.' });
+            roshDay++;
+        }
+        const delay = roshDay - molad.day;
+        return { rd: HEBREW_EPOCH_RD + roshDay, delay, dehiyyot, weekday: moladWeekday, parts: molad.parts };
+    }
+    function hebrewYearMonths(year) {
+        const rd1 = rdOfTishrei1(year).rd;
+        const rd2 = rdOfTishrei1(year + 1).rd;
+        const yearLen = rd2 - rd1;
+        const isLeap = isHebrewLeapYear(year);
+        let cheshvan = 29, kislev = 29;
+        if (isLeap) {
+            if (yearLen === 384) kislev = 30;
+            else if (yearLen === 385) { cheshvan = 30; kislev = 30; }
+            return [30, cheshvan, kislev, 29, 30, 30, 29, 30, 29, 30, 29, 30, 29];
+        }
+        if (yearLen === 354) kislev = 30;
+        else if (yearLen === 355) { cheshvan = 30; kislev = 30; }
+        return [30, cheshvan, kislev, 29, 30, 29, 30, 29, 30, 29, 30, 29];
+    }
+    function getHebrewMonthNames(year) {
+        return isHebrewLeapYear(year)
+            ? ['Тишрей','Хешван','Кислев','Тевет','Шват','Адар I','Адар II','Нисан','Ияр','Сиван','Тамуз','Ав','Элул']
+            : ['Тишрей','Хешван','Кислев','Тевет','Шват','Адар','Нисан','Ияр','Сиван','Тамуз','Ав','Элул'];
+    }
+    function getHebrewMonthHebrewNames(year) {
+        return isHebrewLeapYear(year)
+            ? ['תשרי','חשון','כסלו','טבת','שבט','אדר א׳','אדר ב׳','ניסן','אייר','סיון','תמוז','אב','אלול']
+            : ['תשרי','חשון','כסלו','טבת','שבט','אדר','ניסן','אייר','סיון','תמוז','אב','אלול'];
+    }
+    function getMonthTranslation(name) {
+        const translations = {
+            'Тишрей':'Начало года','Хешван':'Дождливый','Кислев':'Надежда','Тевет':'Зимний',
+            'Шват':'Пробуждение','Адар':'Счастливый','Адар I':'Счастливый (I)','Адар II':'Счастливый (II)',
+            'Нисан':'Весенний','Ияр':'Сияние','Сиван':'Дарование Торы','Тамуз':'Знойный','Ав':'Утешение','Элул':'Покаяние'
+        };
+        return translations[name] || '';
+    }
+    function hebrewToJDN(year, month, day) {
+        const rd1 = rdOfTishrei1(year).rd;
+        const lengths = hebrewYearMonths(year);
+        let rd = rd1;
+        for (let m = 0; m < month - 1; m++) rd += lengths[m];
+        return rdToJDN(rd + day - 1);
+    }
+    function jdnToHebrew(jdn) {
+        const rd = jdnToRD(jdn);
+        let year = Math.floor((rd - HEBREW_EPOCH_RD) / 365.2468) + 1;
+        while (rdOfTishrei1(year + 1).rd <= rd) year++;
+        while (rdOfTishrei1(year).rd > rd) year--;
+        const rd1 = rdOfTishrei1(year).rd;
+        let offset = rd - rd1;
+        const lengths = hebrewYearMonths(year);
+        let month = 1;
+        for (let i = 0; i < lengths.length; i++) {
+            if (offset < lengths[i]) { month = i + 1; break; }
+            offset -= lengths[i];
+        }
+        return { year, month, day: offset + 1 };
+    }
+    function gregorianToJDN(y, m, d) {
+        const a = Math.floor((14 - m) / 12), y1 = y + 4800 - a, m1 = m + 12*a - 3;
+        return d + Math.floor((153*m1+2)/5) + 365*y1 + Math.floor(y1/4) - Math.floor(y1/100) + Math.floor(y1/400) - 32045;
+    }
+    function jdnToGreg(jdn) {
+        const a = jdn + 32044, b = Math.floor((4*a+3)/146097), c = a - Math.floor(146097*b/4);
+        const d = Math.floor((4*c+3)/1461), e = c - Math.floor(1461*d/4), m = Math.floor((5*e+2)/153);
+        const day = e - Math.floor((153*m+2)/5) + 1, month = m + 3 - 12*Math.floor(m/10);
+        const year = 100*b + d - 4800 + Math.floor(m/10);
+        return { year, month, day };
+    }
+    function jdnToJulian(jdn) {
+        const a = jdn + 32082, b = Math.floor((4*a+3)/1461), c = a - Math.floor(1461*b/4);
+        const d = Math.floor((4*c+3)/1461), e = c - Math.floor(1461*d/4), m = Math.floor((5*e+2)/153);
+        const day = e - Math.floor((153*m+2)/5) + 1, month = m + 3 - 12*Math.floor(m/10);
+        const year = b + d - 4800 + Math.floor(m/10);
+        return { year, month, day };
+    }
+    function getWeekday(jdn) { return (jdn + 1) % 7; }
+    const WEEKDAYS = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+    const HEB_WEEKDAYS = ['Риш (Вс)','Шен (Пн)','Шли (Вт)','Рев (Ср)','Хам (Чт)','Шиш (Пт)','Шаб (Сб)'];
+
+    function getHolidays(year, monthName, day, monthLengths) {
+        const h = [];
+        const leap = isHebrewLeapYear(year);
+        if (monthName === 'Тишрей') {
+            if (day===1||day===2) h.push({s:'Рош ха-Шана',c:'rosh-hashana'});
+            if (day===3) h.push({s:'Пост Гедалии',c:'holy-day'});
+            if (day===10) h.push({s:'Йом Кипур',c:'yom-kippur'});
+            if (day>=15&&day<=20) h.push({s:'Суккот',c:'sukkot'});
+            if (day===21) h.push({s:'Шмини Ацерет',c:'sukkot'});
+            if (day===22) h.push({s:'Симхат Тора',c:'sukkot'});
+        }
+        if (monthName==='Кислев' && day>=25) h.push({s:'Ханука',c:'hanukkah'});
+        if (monthName==='Тевет') {
+            const end = monthLengths[2] === 30 ? 3 : 2;
+            if (day<=end) h.push({s:'Ханука',c:'hanukkah'});
+            if (day===10) h.push({s:'Пост 10 Тевета',c:'holy-day'});
+        }
+        if (monthName==='Шват' && day===15) h.push({s:'Ту би-Шват',c:'holy-day'});
+        if (!leap && monthName==='Адар') {
+            if (day===14) h.push({s:'Пурим',c:'purim'});
+            if (day===15) h.push({s:'Шушан Пурим',c:'purim'});
+        }
+        if (leap && monthName==='Адар II') {
+            if (day===14) h.push({s:'Пурим',c:'purim'});
+            if (day===15) h.push({s:'Шушан Пурим',c:'purim'});
+        }
+        if (monthName==='Нисан') {
+            if (day>=15&&day<=21) h.push({s:'Песах',c:'pesach'});
+            if (day===22) h.push({s:'Песах (посл.)',c:'pesach'});
+        }
+        if (monthName==='Ияр') {
+            if (day===5) h.push({s:'Йом ха-Ацмаут',c:'holy-day'});
+            if (day===18) h.push({s:'Лаг ба-Омер',c:'holy-day'});
+        }
+        if (monthName==='Сиван' && (day===6||day===7)) h.push({s:'Шавуот',c:'shavuot'});
+        if (monthName==='Ав' && day===9) h.push({s:'Тиша бе-Ав',c:'tisha-bav'});
+        return h;
+    }
+
+    let currentHY = 5786;
+    const today = new Date();
+    const todayJDN = gregorianToJDN(today.getUTCFullYear(), today.getUTCMonth()+1, today.getUTCDate());
+    const todayHeb = jdnToHebrew(todayJDN);
+    if (todayHeb && todayHeb.year) currentHY = todayHeb.year;
+
+    function renderMolad() {
+        const info = rdOfTishrei1(currentHY);
+        const hours = Math.floor(info.parts / CHALAKIM_PER_HOUR);
+        const chalakim = info.parts % CHALAKIM_PER_HOUR;
+        const dowNames = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+        const box = document.getElementById('moladBox');
+        let html = `<div class="molad-title">🌙 Молад Тишрей (новолуние)</div>`;
+        html += `<div class="molad-value">${dowNames[info.weekday]}, ${hours} ч ${chalakim} хелеков`;
+        if (info.delay > 0) {
+            const newDow = (info.weekday + info.delay) % 7;
+            html += ` → Рош‑ха‑Шана: <strong>${dowNames[newDow]}</strong> (задержка +${info.delay} дн.)`;
+        } else {
+            html += ` → Рош‑ха‑Шана: <strong>${dowNames[info.weekday]}</strong> (без задержки)`;
+        }
+        html += `</div><div class="dehiyyot-list">`;
+        if (info.dehiyyot.length === 0) {
+            html += `<span class="dh-none">✅ Ни одно правило дехийот не сработало.</span>`;
+        } else {
+            info.dehiyyot.forEach(dh => {
+                html += `<span class="dh-item" title="${dh.desc}"><strong>${dh.name}</strong>: ${dh.desc}</span> `;
+            });
+        }
+        html += `</div>`;
+        box.innerHTML = html;
+    }
+
+    function renderCalendar() {
+        const container = document.getElementById('calendarContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        const hY = currentHY;
+        const isLeap = isHebrewLeapYear(hY);
+        const monthNames = getHebrewMonthNames(hY);
+        const monthHebNames = getHebrewMonthHebrewNames(hY);
+        const monthLengths = hebrewYearMonths(hY);
+        const rd1 = rdOfTishrei1(hY).rd;
+        const tishrei1Greg = jdnToGreg(rdToJDN(rd1));
+        document.getElementById('yearDisplay').textContent = `${hY} г. от сотворения мира`;
+        document.getElementById('yearDisplay').title = `1 Тишрей: ${tishrei1Greg.day}.${tishrei1Greg.month}.${tishrei1Greg.year}`;
+        const yearLen = rdOfTishrei1(hY+1).rd - rd1;
+        const typeLabels = {353:'обычный недостаточный (353 дн.)',354:'обычный правильный (354 дн.)',355:'обычный избыточный (355 дн.)',383:'високосный недостаточный (383 дн.)',384:'високосный правильный (384 дн.)',385:'високосный избыточный (385 дн.)'};
+        document.getElementById('noticeYearType').textContent = `${isLeap?'🕎 Високосный':'📅 Обычный'} год — ${typeLabels[yearLen] || yearLen+' дн.'}.`;
+        if (todayHeb && todayHeb.year === hY) {
+            const wd = getWeekday(todayJDN);
+            document.getElementById('currentDateInfo').textContent = `Сегодня: ${['Йом Ришон','Йом Шени','Йом Шлиши','Йом Ревии','Йом Хамиши','Йом Шиши','Йом Шаббат'][wd]}, ${todayHeb.day} ${monthNames[todayHeb.month-1]} ${hY}`;
+        } else document.getElementById('currentDateInfo').textContent = '';
+        renderMolad();
+        const grid = document.createElement('div'); grid.className = 'calendar-grid';
+        for (let mi = 0; mi < monthLengths.length; mi++) {
+            const days = monthLengths[mi], mName = monthNames[mi], mHeb = monthHebNames[mi], mTrans = getMonthTranslation(mName);
+            let firstJDN = rdToJDN(rd1);
+            for (let m = 0; m < mi; m++) firstJDN += monthLengths[m];
+            const card = document.createElement('div'); card.className = 'month-card';
+            if (mName === 'Тишрей') card.classList.add('tishrei');
+            if (mName === 'Адар I') card.classList.add('adar-i');
+            if (mName === 'Адар II') card.classList.add('adar-ii');
+            card.innerHTML = `<div class="month-header"><div class="month-hebrew">${mHeb}</div><div class="month-translit">${mName}</div><div class="month-translation">${mTrans}</div><div class="month-days-count">${days} дней</div></div><div class="weekday-row">${HEB_WEEKDAYS.map(w => `<div>${w}</div>`).join('')}</div>`;
+            const daysGrid = document.createElement('div'); daysGrid.className = 'days-grid';
+            for (let i = 0; i < getWeekday(firstJDN); i++) daysGrid.appendChild(document.createElement('div'));
+            for (let d = 1; d <= days; d++) {
+                const jdn = firstJDN + d - 1, g = jdnToGreg(jdn), ju = jdnToJulian(jdn), wd = getWeekday(jdn);
+                const cell = document.createElement('div'); cell.className = 'day-cell';
+                if (jdn === todayJDN) cell.classList.add('today');
+                if (wd === 6) cell.classList.add('shabbat');
+                const hols = getHolidays(hY, mName, d, monthLengths);
+                hols.forEach(h => cell.classList.add(h.c));
+                let html = `<span class="badi-day-row">${d}</span><span class="greg-date">${String(g.day).padStart(2,'0')}.${String(g.month).padStart(2,'0')} гр.</span><span class="julian-date">${String(ju.day).padStart(2,'0')}.${String(ju.month).padStart(2,'0')} юл.</span>`;
+                if (wd === 6 && hols.length === 0) html += '<span class="holy-label" style="background:#c8daf5;">Шаббат</span>';
+                hols.forEach(h => { html += `<span class="holy-label">${h.s}</span>`; });
+                cell.innerHTML = html;
+                daysGrid.appendChild(cell);
+            }
+            card.appendChild(daysGrid);
+            grid.appendChild(card);
+        }
+        container.appendChild(grid);
+    }
+
+    document.getElementById('prevYearBtn').onclick = () => { currentHY--; renderCalendar(); };
+    document.getElementById('nextYearBtn').onclick = () => { currentHY++; renderCalendar(); };
+    document.getElementById('todayBtn').onclick = () => { if(todayHeb){ currentHY=todayHeb.year; renderCalendar(); } };
+    document.getElementById('tabCalendar').onclick = () => {
+        document.getElementById('tabCalendar').classList.add('active');
+        document.getElementById('tabConverter').classList.remove('active');
+        document.getElementById('panelCalendar').classList.add('active');
+        document.getElementById('panelConverter').classList.remove('active');
+        renderCalendar();
+    };
+    document.getElementById('tabConverter').onclick = () => {
+        document.getElementById('tabConverter').classList.add('active');
+        document.getElementById('tabCalendar').classList.remove('active');
+        document.getElementById('panelConverter').classList.add('active');
+        document.getElementById('panelCalendar').classList.remove('active');
+        populateMonthSelect();
+    };
+    function populateMonthSelect() {
+        const sel = document.getElementById('hebrewMonth');
+        sel.innerHTML = '';
+        ['Тишрей','Хешван','Кислев','Тевет','Шват','Адар','Нисан','Ияр','Сиван','Тамуз','Ав','Элул'].forEach((n,i) => sel.appendChild(new Option(`${i+1}. ${n}`, i+1)));
+        sel.appendChild(new Option('──────────','',false,true));
+        sel.appendChild(new Option('6b. Адар I (високосный)','6b'));
+        sel.appendChild(new Option('7b. Адар II (високосный)','7b'));
+    }
+    document.getElementById('convGregBtn').onclick = () => {
+        const v = document.getElementById('gregInput').value;
+        const res = document.getElementById('gregResult');
+        if(!v) { res.innerHTML='<span class="sub">Выберите дату</span>'; return; }
+        const [gy,gm,gd] = v.split('-').map(Number);
+        const jdn = gregorianToJDN(gy,gm,gd), heb = jdnToHebrew(jdn), ju = jdnToJulian(jdn);
+        const wd = WEEKDAYS[getWeekday(jdn)];
+        const mName = getHebrewMonthNames(heb.year)[heb.month-1];
+        res.innerHTML = `<div class="main">${heb.day} ${mName} ${heb.year}</div><div class="sub">Григорианская: ${wd}, ${gd}.${gm}.${gy}</div><div class="sub">Юлианская: ${wd}, ${ju.day}.${ju.month}.${ju.year}</div>`;
+    };
+    document.getElementById('convHebrewBtn').onclick = () => {
+        const mVal = document.getElementById('hebrewMonth').value;
+        const day = parseInt(document.getElementById('hebrewDay').value);
+        const year = parseInt(document.getElementById('hebrewYearInput').value);
+        const res = document.getElementById('hebrewResult');
+        if(isNaN(day)||isNaN(year)||!mVal) { res.innerHTML='<span class="sub">Введите полную дату</span>'; return; }
+        let mNum;
+        if(mVal==='6b') mNum=6; else if(mVal==='7b') mNum=7; else mNum=parseInt(mVal);
+        if(!isHebrewLeapYear(year) && mNum>12) { res.innerHTML='<span class="sub">В обычном году 12 месяцев</span>'; return; }
+        if(isHebrewLeapYear(year) && mVal==='6' && mNum===6) { res.innerHTML='<span class="sub">Выберите Адар I (6b) или Адар II (7b)</span>'; return; }
+        const jdn = hebrewToJDN(year, mNum, day), g = jdnToGreg(jdn), ju = jdnToJulian(jdn);
+        const wd = WEEKDAYS[getWeekday(jdn)];
+        const mName = getHebrewMonthNames(year)[mNum-1];
+        res.innerHTML = `<div class="main">${wd}, ${g.day}.${g.month}.${g.year}</div><div class="sub">Еврейская: ${day} ${mName} ${year}</div><div class="sub">Юлианская: ${wd}, ${ju.day}.${ju.month}.${ju.year}</div>`;
+    };
+    document.getElementById('gregInput').value = today.getUTCFullYear()+'-'+String(today.getUTCMonth()+1).padStart(2,'0')+'-'+String(today.getUTCDate()).padStart(2,'0');
+    document.getElementById('hebrewYearInput').value = currentHY;
+    populateMonthSelect();
+    renderCalendar();
+})();
+</script>
+</body>
+</html>
