@@ -188,7 +188,7 @@
     const CHALAKIM_PER_HOUR = 1080;
     const CHALAKIM_PER_DAY = 24 * CHALAKIM_PER_HOUR;
     const CHALAKIM_PER_MONTH = 29 * CHALAKIM_PER_DAY + 12 * CHALAKIM_PER_HOUR + 793;
-    const INITIAL_MOLAD_OFFSET = 11 * CHALAKIM_PER_HOUR + 204;
+    const INITIAL_MOLAD_OFFSET = 2 * CHALAKIM_PER_DAY + 5 * CHALAKIM_PER_HOUR + 204;
     const HEBREW_EPOCH_RD = -1373427;
 
     function rdToJDN(rd) { return rd + 1721425; }
@@ -197,33 +197,30 @@
     function moladTishrei(year) {
         const monthsElapsed = Math.floor((235 * year - 234) / 19);
         const totalChalakim = INITIAL_MOLAD_OFFSET + CHALAKIM_PER_MONTH * monthsElapsed;
-        return {
-            day: Math.floor(totalChalakim / CHALAKIM_PER_DAY),
-            parts: totalChalakim % CHALAKIM_PER_DAY
-        };
+        return { day: Math.floor(totalChalakim / CHALAKIM_PER_DAY), parts: totalChalakim % CHALAKIM_PER_DAY };
     }
-    function rdWeekday(rd) { return (rdToJDN(rd) + 1) % 7; }
     function rdOfTishrei1(year) {
         const molad = moladTishrei(year);
-        const moladWeekday = rdWeekday(HEBREW_EPOCH_RD + molad.day);
-        let roshDay = molad.day;
+        const weekday = (molad.day + 1) % 7;
+        let delay = 0;
         const dehiyyot = [];
         if (molad.parts >= 19440) {
-            roshDay++;
+            delay++;
             dehiyyot.push({ name: 'Молад Закен', desc: 'Молад после 18:00 — перенос на +1 день.' });
-        } else if (molad.day % 7 === 2 && molad.parts >= 9924 && !isHebrewLeapYear(year)) {
-            roshDay += 2;
+        } else if (weekday === 2 && molad.parts >= 9924 && !isHebrewLeapYear(year)) {
+            delay += 2;
             dehiyyot.push({ name: 'Га-Тарад', desc: 'Молад во вторник ≥ 9ч 204х в невисокосный год — перенос на +2 дня.' });
-        } else if (molad.day % 7 === 1 && molad.parts >= 16789 && isHebrewLeapYear(year - 1)) {
-            roshDay++;
+        } else if (weekday === 1 && molad.parts >= 16789 && isHebrewLeapYear(year - 1)) {
+            delay++;
             dehiyyot.push({ name: 'Бетуткафот', desc: 'Молад в понедельник ≥ 15ч 589х после високосного года — перенос на +1 день.' });
         }
-        if (roshDay % 7 === 2 || roshDay % 7 === 4 || roshDay % 7 === 6) {
+        let resultWeekday = (weekday + delay) % 7;
+        if (resultWeekday === 0 || resultWeekday === 3 || resultWeekday === 5) {
             dehiyyot.push({ name: 'Ло АДУ Рош', desc: 'Рош‑ха‑Шана не может быть в вс, ср или пт — перенос на +1 день.' });
-            roshDay++;
+            delay++;
+            resultWeekday = (resultWeekday + 1) % 7;
         }
-        const delay = roshDay - molad.day;
-        return { rd: HEBREW_EPOCH_RD + roshDay, delay, dehiyyot, weekday: moladWeekday, parts: molad.parts };
+        return { rd: HEBREW_EPOCH_RD + molad.day + delay, delay, dehiyyot, weekday, parts: molad.parts };
     }
     function hebrewYearMonths(year) {
         const rd1 = rdOfTishrei1(year).rd;
